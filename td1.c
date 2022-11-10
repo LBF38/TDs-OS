@@ -34,9 +34,9 @@ void printProcessusDetails()
     }
     else
     {
-
         printf("Répertoire de travail: %s\n", directoryPath);
     };
+    // printf("Répertoire de travail: %s\n",getcwd(NULL, 0));
     printf("Processus ID: %d\n", getpid());
     printf("Processus père ID: %d\n", getppid());
     printf("Propriétaire réel: %d\n", getuid());
@@ -69,9 +69,33 @@ void ex2()
     printf("Fin du test fork()\n");
 }
 
+void ex3()
+{
+    int code_retour;
+    code_retour = fork();
+    switch (code_retour)
+    {
+    case -1:
+        printf("Problème lors de la creation du processus\n");
+        break;
+    case 0:
+        printf("Je suis le processus fils \n");
+        printProcessusDetails();
+        sleep(5);
+        break;
+    default:
+        printf("Je suis le processus père\n");
+        printProcessusDetails();
+        printf("Je viens de créer le processus fils dont le pid est % d \n", code_retour);
+    }
+    printf("code_retour % d\n", code_retour);
+    printf("Fin du test fork()\n");
+}
+
 int main()
 {
     // ex1();
-    ex2();
+    // ex2();
+    ex3();
     return 0;
 }
