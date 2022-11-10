@@ -1,4 +1,8 @@
-main()
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+void ex1()
 {
     int code_retour;
     printf("Debut du test fork()\n");
@@ -17,4 +21,10 @@ main()
     }
     printf("code_retour % d\n", code_retour);
     printf("Fin du test fork()\n");
+}
+
+
+int main(){
+    ex1();
+    return 0;
 }
