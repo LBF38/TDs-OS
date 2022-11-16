@@ -162,7 +162,7 @@ void ex5()
     printf("Fin du test fork()\n");
 }
 
-void ex6()
+void ex6a()
 {
     int code_retour;
     code_retour = fork();
@@ -174,18 +174,47 @@ void ex6()
     case 0:
         printf("Je suis le processus fils \n");
         printProcessusDetails();
-        sleep(10);
-        // exit(3);
+        sleep(5);
+        exit(3);
         break;
     default:
         printf("Je suis le processus père\n");
         printProcessusDetails();
         printf("Je viens de créer le processus fils dont le pid est % d \n", code_retour);
         int terminaison;
-        waitpid(code_retour, &terminaison, WNOHANG);
-        int signal = WTERMSIG(terminaison);
+        pid_t child_pid = waitpid(code_retour, &terminaison, WCONTINUED);
+        printf("Père: fin processus PID : %d\n", child_pid);
         printf("Père: terminaison fils : %d\n", terminaison);
-        printf("Père: terminaison signal : %d\n", signal);
+        printf("Père: exit status : %d\n", WEXITSTATUS(terminaison));
+    }
+    printf("code_retour %d\n", code_retour);
+    printf("Fin du test fork()\n");
+}
+
+void ex6b()
+{
+    int code_retour;
+    code_retour = fork();
+    switch (code_retour)
+    {
+    case -1:
+        printf("Problème lors de la creation du processus\n");
+        break;
+    case 0:
+        printf("Je suis le processus fils \n");
+        printProcessusDetails();
+        sleep(20);
+        exit(3);
+        break;
+    default:
+        printf("Je suis le processus père\n");
+        printProcessusDetails();
+        printf("Je viens de créer le processus fils dont le pid est % d \n", code_retour);
+        int terminaison;
+        pid_t child_pid = waitpid(code_retour, &terminaison, WCONTINUED);
+        printf("Père: fin processus PID : %d\n", child_pid);
+        printf("Père: terminaison fils : %d\n", terminaison);
+        printf("Père: exit status : %d\n", WEXITSTATUS(terminaison));
     }
     printf("code_retour %d\n", code_retour);
     printf("Fin du test fork()\n");
@@ -198,6 +227,7 @@ int main()
     // ex3();
     // ex4();
     // ex5();
-    ex6();
+    // ex6a();
+    ex6b();
     return 0;
 }
