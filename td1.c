@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -30,17 +31,7 @@ void ex1()
 
 void printProcessusDetails()
 {
-    int sizePath = 100;
-    char directoryPath[sizePath];
-    if (getcwd(directoryPath, sizePath) == NULL)
-    {
-        printf("Error: Couldn't get directory path OR size is too small.\n");
-    }
-    else
-    {
-        printf("Répertoire de travail: %s\n", directoryPath);
-    };
-    // printf("Répertoire de travail: %s\n",getcwd(NULL, 0));
+    printf("Répertoire de travail: %s\n", getcwd(NULL, 0));
     printf("Processus ID: %d\n", getpid());
     printf("Processus père ID: %d\n", getppid());
     printf("Propriétaire réel: %d\n", getuid());
@@ -147,11 +138,36 @@ void ex4()
     }
 }
 
+void ex5()
+{
+    int code_retour;
+    code_retour = fork();
+    switch (code_retour)
+    {
+    case -1:
+        printf("Problème lors de la creation du processus\n");
+        break;
+    case 0:
+        printf("Je suis le processus fils \n");
+        printProcessusDetails();
+        sleep(5);
+        break;
+    default:
+        printf("Je suis le processus père\n");
+        printProcessusDetails();
+        printf("Je viens de créer le processus fils dont le pid est % d \n", code_retour);
+        wait(NULL);
+    }
+    printf("code_retour % d\n", code_retour);
+    printf("Fin du test fork()\n");
+}
+
 int main()
 {
     // ex1();
     // ex2();
     // ex3();
-    ex4();
+    // ex4();
+    ex5();
     return 0;
 }
