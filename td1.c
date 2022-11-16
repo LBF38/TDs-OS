@@ -264,6 +264,18 @@ void ex7()
     printf("Fin du test fork()\n");
 }
 
+void ex9()
+{
+    char buf[80];
+
+    printf("[%d]-- Début du test exec()\n", getpid());
+    sprintf(buf, "--pid=[%d]", getpid());
+    execl("/bin/echo", "echo", "Execution", "d'un test exec", buf, NULL);
+    printf("[%d]-- Echec de la fonction execl()\n", getpid());
+    printf("[%d]-- Fin du test exec()\n", getpid());
+    exit(0);
+}
+
 int main()
 {
     // ex1();
@@ -273,6 +285,7 @@ int main()
     // ex5();
     // ex6a();
     // ex6b();
-    ex7();
+    // ex7();
+    ex9();
     return 0;
 }
