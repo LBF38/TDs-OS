@@ -220,6 +220,50 @@ void ex6b()
     printf("Fin du test fork()\n");
 }
 
+void ex7()
+{
+    int processus, processus2;
+    processus = fork();
+    processus2 = fork();
+    if (processus == -1)
+    {
+        printf("Problème lors de la création du processus fils 1\n");
+    }
+    else if (processus2 == -1)
+    {
+        printf("Problème lors de la création du processus fils 2\n");
+    }
+    else if (processus == 0)
+    {
+        printf("Je suis le processus fils 1\n");
+        printProcessusDetails();
+        printf("Fils 1: s'endort\n");
+        sleep(5);
+        printf("Fils 1: se termine\n");
+        exit(1);
+    }
+    else if (processus2 == 0)
+    {
+        printf("Je suis le processus fils 2\n");
+        printProcessusDetails();
+        printf("Fils 2: s'endort\n");
+        sleep(10);
+        printf("Fils 2: se termine\n");
+        exit(2);
+    }
+    else
+    {
+        printf("Je suis le processus père\n");
+        printProcessusDetails();
+        int terminaison;
+        pid_t child_pid = waitpid(processus2, &terminaison, WCONTINUED);
+        printf("Père: fin processus PID : %d\n", child_pid);
+        printf("Père: terminaison fils : %d\n", terminaison);
+        printf("Père: exit status : %d\n", WEXITSTATUS(terminaison));
+    }
+    printf("Fin du test fork()\n");
+}
+
 int main()
 {
     // ex1();
@@ -228,6 +272,7 @@ int main()
     // ex4();
     // ex5();
     // ex6a();
-    ex6b();
+    // ex6b();
+    ex7();
     return 0;
 }
