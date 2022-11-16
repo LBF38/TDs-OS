@@ -162,12 +162,42 @@ void ex5()
     printf("Fin du test fork()\n");
 }
 
+void ex6()
+{
+    int code_retour;
+    code_retour = fork();
+    switch (code_retour)
+    {
+    case -1:
+        printf("Problème lors de la creation du processus\n");
+        break;
+    case 0:
+        printf("Je suis le processus fils \n");
+        printProcessusDetails();
+        sleep(10);
+        // exit(3);
+        break;
+    default:
+        printf("Je suis le processus père\n");
+        printProcessusDetails();
+        printf("Je viens de créer le processus fils dont le pid est % d \n", code_retour);
+        int terminaison;
+        waitpid(code_retour, &terminaison, WNOHANG);
+        int signal = WTERMSIG(terminaison);
+        printf("Père: terminaison fils : %d\n", terminaison);
+        printf("Père: terminaison signal : %d\n", signal);
+    }
+    printf("code_retour %d\n", code_retour);
+    printf("Fin du test fork()\n");
+}
+
 int main()
 {
     // ex1();
     // ex2();
     // ex3();
     // ex4();
-    ex5();
+    // ex5();
+    ex6();
     return 0;
 }
