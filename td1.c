@@ -276,6 +276,59 @@ void ex9()
     exit(0);
 }
 
+void ex10()
+{
+    int processus;
+    processus = fork();
+    switch (processus)
+    {
+    case -1:
+        printf("Problème lors de la création du processus\n");
+        break;
+    case 0:
+        int end = execl("/bin/ps", "ps", "-l", NULL);
+        exit(end);
+        break;
+    default:
+        printf("Processus père\n");
+        int terminaison;
+        pid_t child_pid = waitpid(processus, &terminaison, WCONTINUED);
+        printf("Père: fin processus PID : %d\n", child_pid);
+        printf("Père: terminaison fils : %d\n", terminaison);
+        printf("Père: exit status : %d\n", WEXITSTATUS(terminaison));
+        break;
+    }
+}
+
+void ex10b()
+{
+    int processus;
+    processus = fork();
+    if (processus == -1)
+    {
+        printf("Problème lors de la création du processus\n");
+    }
+    else if (processus == 0)
+    {
+        int NMAX = 5;
+        char *argv[NMAX];
+        argv[0] = "ps";
+        argv[1] = "-l";
+        argv[2] = NULL;
+        int end = execv("/bin/ps", argv);
+        exit(end);
+    }
+    else
+    {
+        printf("Processus père\n");
+        int terminaison;
+        pid_t child_pid = waitpid(processus, &terminaison, WCONTINUED);
+        printf("Père: fin processus PID : %d\n", child_pid);
+        printf("Père: terminaison fils : %d\n", terminaison);
+        printf("Père: exit status : %d\n", WEXITSTATUS(terminaison));
+    }
+}
+
 int main()
 {
     // ex1();
@@ -286,6 +339,8 @@ int main()
     // ex6a();
     // ex6b();
     // ex7();
-    ex9();
+    // ex9();
+    // ex10();
+    ex10b();
     return 0;
 }
