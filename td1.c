@@ -343,10 +343,27 @@ void ex11()
     else if (processus == 0)
     {
         printf("myshell$ ");
+        // Attente de la commande par l'utilisateur
         scanf("%[^\n]", commande);
+        // Lecture de la ligne de commande
+        char *token = strtok(commande, " ");
+        int i;
+        while (token != NULL)
+        {
+            argv[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        argv[i] = NULL;
+        // Interprétation de la commande
+        if (strcmp(argv[0], "exit") == 0)
+        {
+            printf("Sortie du terminal\n");
+            exit(0);
+        }
+        char *path = strcat("/bin/", argv[0]);
         printf("commande demandée: %s\n", commande);
-        // int end = execv("/bin/ps", argv);
-        // exit(end);
+        execv(path, argv);
+        printf("Error commande : %s\n", commande);
         exit(1);
     }
     else
@@ -354,9 +371,16 @@ void ex11()
         printf("Processus père\n");
         int terminaison;
         pid_t child_pid = waitpid(processus, &terminaison, WCONTINUED);
+        int exit_status = WEXITSTATUS(terminaison);
         printf("Père: fin processus PID : %d\n", child_pid);
         printf("Père: terminaison fils : %d\n", terminaison);
-        printf("Père: exit status : %d\n", WEXITSTATUS(terminaison));
+        printf("Père: exit status : %d\n", exit_status);
+        if (exit_status == 1)
+        {
+            printf("Fin du programme\n");
+            exit(0);
+        }
+        ex11();
     }
 }
 
