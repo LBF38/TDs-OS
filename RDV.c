@@ -7,20 +7,30 @@
 #include <errno.h>     /* errno */
 #include <unistd.h>    /*sleep*/
 
-// Ce programme doit �tre dupliqu� pour chaque processus voulant �tablir un RDV
+// Ce programme doit etre duplique pour chaque processus voulant etablir un RDV
 // vous pouvez nommer le programme du premier processus RDV1.C et celui du 2nd RDV2.C par exemple
-// Les 2 programmes doivent �tre compil�s s�parement et ex�cuter s�parement sur le shell
+// Les 2 programmes doivent etre compiles separement et executer separement sur le shell
 
-/* retourne -1 en cas d'erreur           */
+/* retourne -1 en cas d'erreur */
 int P(int semid, int noSem)
 {
     struct sembuf Ops[1];
     int ok;
 
-    // Q- donner les 3 �l�ments de la structure Ops pour r�aliser l'op�ration (voir le cours)
+    // Q- donner les 3 elements de la structure Ops pour realiser l'operation (voir le cours)
     // Ops[0].sem_num = ...; ...
+    // Ops[0].sem_op = ...; ...
+    // Ops[0].sem_flg = ...; ...
+    // --
 
-    // Q- faire appel � la fonction semop pour r�aliser l'op�ration P, la variable OK r�cup�re la valeur de retour
+    ok = semop(semid, Ops, 1);
+    if (ok == -1)
+    {
+        perror("P");
+        return ok;
+    }
+
+    // Q- faire appel a la fonction semop pour realiser l'operation P, la variable OK recupere la valeur de retour
 }
 
 /* retourne -1 en cas d'erreur           */
@@ -29,24 +39,23 @@ int V(int semid, int noSem)
     struct sembuf Ops[1];
     int ok;
 
-    // Q- donner les 3 �l�ments de la structure Ops pour r�aliser l'op�ration (voir le cours)
+    // Q- donner les 3 elements de la structure Ops pour realiser l'operation (voir le cours)
     // Ops[0].sem_num = ...; ...
 
-    // Q- faire appel � la fonction semop pour r�aliser l'op�ration V, la variable OK r�cup�re la valeur de retour
+    // Q- faire appel a la fonction semop pour realiser l'operation V, la variable OK recupere la valeur de retour
 }
 
 int main(void)
-{ // � compl�ter sans oublier de supprimer l'ensemble des s�maphores
+{ // A completer sans oublier de supprimer l'ensemble des semaphores
 
-    // Q- Il faut d'abord recr�er la cl� (voir sema.c)
+    // Q- Il faut d'abord recreer la cle (voir sema.c)
 
-    // Q- il faut ensuite ouvrir le semaphore avec semget, � part la cl�, les autres argument doivent �tre � z�ro
-    // car il ne s'agit pas d'une cr�ation mais d'une ouverture
+    // Q- il faut ensuite ouvrir le semaphore avec semget, a part la cle, les autres argument doivent etre a zero
+    // car il ne s'agit pas d'une creation mais d'une ouverture
 
-    // Q- faire l'appel � sleep() afin d'avoir des attentes de diff�rentes dur�es pour les 2 processus
+    // Q- faire l'appel a sleep() afin d'avoir des attentes de differentes durees pour les 2 processus
 
-    // Q- faire appel � P et � V (voir le TD)
+    // Q- faire appel a P et a V (voir le TD)
 
     // appeler la fonction de RDV, un printf est suffisant.
 }
-

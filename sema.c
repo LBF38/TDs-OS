@@ -44,6 +44,7 @@ int main(int argc, char **argv)
     // Q: rajouter ici l'appel � la fonction ftok(), la variable k contiendra la cl� extraite (retour de la fonction ftok)
     // on pourra utiliser PRJVAL comme second param�tre de la fonction ftok
     // --
+    k = ftok("OS", PRJVAL);
 
     if (k == -1)
         perror("ftok");
@@ -52,6 +53,7 @@ int main(int argc, char **argv)
 
     // Q: appel � la fonction semget() et mise de la valeur de retour dans la variable semid
     //--
+    semid = semget(k, nbSem, IPC_CREAT | 0666);
 
     if (semid == -1)
     {
@@ -74,6 +76,7 @@ int main(int argc, char **argv)
     // Q: faites un appel � la fonction semclt() pour initialiser les s�maphore avec les valeurs se trouvant dans le tableau values
     // utilisez l'op�ration SETALL
     // --
+    semctl(semid, 0, SETALL, values);
     free(values);
 
     return 0;
