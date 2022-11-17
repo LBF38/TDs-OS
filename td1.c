@@ -363,7 +363,6 @@ void ex11()
             token = strtok(NULL, " ");
         }
         argv[i] = NULL;
-        // printf("argv[0] = %s\n", argv[0]);
         // Interprétation de la commande
         if (strcmp(argv[0], "exit") == 0)
         {
@@ -372,22 +371,15 @@ void ex11()
         }
         char path[100];
         sprintf(path, "/bin/%s", argv[0]);
-        // printf("commande demandée: %s\n", commande);
         execv(path, argv);
         printf("Error commande : %s\n", commande);
         exit(1);
     }
     else
     {
-        // printf("Processus père\n");
         int terminaison;
-        // pid_t child_pid = waitpid(processus, &terminaison, WCONTINUED);
         waitpid(processus, &terminaison, WCONTINUED);
-        // wait(&terminaison);
         int exit_status = WEXITSTATUS(terminaison);
-        // printf("Père: fin processus PID : %d\n", child_pid);
-        // printf("Père: terminaison fils : %d\n", terminaison);
-        // printf("Père: exit status : %d\n", exit_status);
         switch (exit_status)
         {
         case 0:
