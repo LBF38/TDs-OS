@@ -8,6 +8,15 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#define RED "\x1B[31m"
+#define GREEN "\x1B[32m"
+#define YELLOW "\x1B[33m"
+#define BLUE "\x1B[34m"
+#define MAGENTA "\x1B[35m"
+#define CYAN "\x1B[36m"
+#define WHITE "\x1B[37m"
+#define RESET "\x1B[0m"
+
 void ex1()
 {
     int code_retour;
@@ -329,6 +338,77 @@ void ex10b()
     }
 }
 
+void ex11()
+{
+    int NMAX = 5;
+    char *argv[NMAX];
+    char commande[100];
+    int processus;
+    processus = fork();
+    if (processus == -1)
+    {
+        printf("Problème lors de la création du processus\n");
+    }
+    else if (processus == 0)
+    {
+        printf(BLUE "myshell$ " RESET);
+        // Attente de la commande par l'utilisateur
+        scanf("%[^\n]", commande);
+        // Lecture de la ligne de commande
+        char *token = strtok(commande, " ");
+        int i = 0;
+        while (token != NULL)
+        {
+            argv[i++] = token;
+            token = strtok(NULL, " ");
+        }
+        argv[i] = NULL;
+        // printf("argv[0] = %s\n", argv[0]);
+        // Interprétation de la commande
+        if (strcmp(argv[0], "exit") == 0)
+        {
+            printf("Sortie du terminal\n");
+            exit(2);
+        }
+        char path[100];
+        sprintf(path, "/bin/%s", argv[0]);
+        // printf("commande demandée: %s\n", commande);
+        execv(path, argv);
+        printf("Error commande : %s\n", commande);
+        exit(1);
+    }
+    else
+    {
+        // printf("Processus père\n");
+        int terminaison;
+        // pid_t child_pid = waitpid(processus, &terminaison, WCONTINUED);
+        waitpid(processus, &terminaison, WCONTINUED);
+        // wait(&terminaison);
+        int exit_status = WEXITSTATUS(terminaison);
+        // printf("Père: fin processus PID : %d\n", child_pid);
+        // printf("Père: terminaison fils : %d\n", terminaison);
+        // printf("Père: exit status : %d\n", exit_status);
+        switch (exit_status)
+        {
+        case 0:
+            // printf(GREEN "Sortie avec succès\n" RESET);
+            ex11();
+            break;
+        case 1:
+            printf(RED "Commande inconnue\n" RESET);
+            ex11();
+            break;
+        case 2:
+            printf(GREEN "Sortie avec succès\n" RESET);
+            exit(0);
+            break;
+        default:
+            ex11();
+            break;
+        }
+    }
+}
+
 int main()
 {
     // ex1();
@@ -341,6 +421,7 @@ int main()
     // ex7();
     // ex9();
     // ex10();
-    ex10b();
+    // ex10b();
+    ex11();
     return 0;
 }
