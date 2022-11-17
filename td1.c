@@ -329,6 +329,37 @@ void ex10b()
     }
 }
 
+void ex11()
+{
+    int NMAX = 5;
+    char *argv[NMAX];
+    char commande[100];
+    int processus;
+    processus = fork();
+    if (processus == -1)
+    {
+        printf("Problème lors de la création du processus\n");
+    }
+    else if (processus == 0)
+    {
+        printf("myshell$ ");
+        scanf("%[^\n]", commande);
+        printf("commande demandée: %s\n", commande);
+        // int end = execv("/bin/ps", argv);
+        // exit(end);
+        exit(1);
+    }
+    else
+    {
+        printf("Processus père\n");
+        int terminaison;
+        pid_t child_pid = waitpid(processus, &terminaison, WCONTINUED);
+        printf("Père: fin processus PID : %d\n", child_pid);
+        printf("Père: terminaison fils : %d\n", terminaison);
+        printf("Père: exit status : %d\n", WEXITSTATUS(terminaison));
+    }
+}
+
 int main()
 {
     // ex1();
@@ -341,6 +372,7 @@ int main()
     // ex7();
     // ex9();
     // ex10();
-    ex10b();
+    // ex10b();
+    ex11();
     return 0;
 }
