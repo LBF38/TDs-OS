@@ -17,7 +17,11 @@ int main(int argc, char **argv)
     unsigned short *values;
     struct stat buf;
 
-    // le programme prend 3 arguments: le nom du fichier pour cr�er la cl�, le nombre de s�maphore ainsi que la valeur initiale
+    /* le programme prend 3 arguments: 
+    - le nom du fichier pour creer la cle, 
+    - le nombre de semaphore 
+    - et la valeur initiale
+    */ 
     if (argc != 4)
     {
         fprintf(stderr, "Usage: %s nomFichier nbSem val\n", argv[0]);
@@ -31,27 +35,27 @@ int main(int argc, char **argv)
     }
 
     if (sscanf(argv[2], "%d", &nbSem) != 1)
-    { // le nombre de semaphore cr�es
+    { // le nombre de semaphore crees
         fprintf(stderr, "%s n'est pas un entier!\n", argv[2]);
         return 1;
     }
     if (sscanf(argv[3], "%d", &val) != 1)
-    { // la valeur initiale des s�maphores
+    { // la valeur initiale des semaphores
         fprintf(stderr, "%s n'est pas un entier!\n", argv[3]);
         return 1;
     }
 
-    // Q: rajouter ici l'appel � la fonction ftok(), la variable k contiendra la cl� extraite (retour de la fonction ftok)
-    // on pourra utiliser PRJVAL comme second param�tre de la fonction ftok
+    // Q: rajouter ici l'appel a la fonction ftok(), la variable k contiendra la cle extraite (retour de la fonction ftok)
+    // on pourra utiliser PRJVAL comme second parametre de la fonction ftok
     // --
-    k = ftok("OS", PRJVAL);
+    k = ftok(argv[1], PRJVAL);
 
     if (k == -1)
         perror("ftok");
 
     printf("cle %d (dec) %x (hex) inode %x\n", k, k, (int)buf.st_ino);
 
-    // Q: appel � la fonction semget() et mise de la valeur de retour dans la variable semid
+    // Q: appel a la fonction semget() et mise de la valeur de retour dans la variable semid
     //--
     semid = semget(k, nbSem, IPC_CREAT | 0666);
 
@@ -63,18 +67,18 @@ int main(int argc, char **argv)
     printf("semid obtenu:%d\n", semid);
 
     // initialisation des semaphores
-    values = (unsigned short *)malloc(sizeof(unsigned short) * nbSem); // autant d'�l�ments dans le tableau que le nombre de semaphores
+    values = (unsigned short *)malloc(sizeof(unsigned short) * nbSem); // autant d'elements dans le tableau que le nombre de semaphores
     if (values == NULL)
     {
         exit(-1);
     }
 
-    // le tableau values contient l'ensemble des valeur avec lesquels on veut initialiser les s�maphores
+    // le tableau values contient l'ensemble des valeur avec lesquels on veut initialiser les semaphores
     for (s = 0; s < nbSem; s++)
         values[s] = val;
 
-    // Q: faites un appel � la fonction semclt() pour initialiser les s�maphore avec les valeurs se trouvant dans le tableau values
-    // utilisez l'op�ration SETALL
+    // Q: faites un appel a la fonction semclt() pour initialiser les semaphore avec les valeurs se trouvant dans le tableau values
+    // utilisez l'operation SETALL
     // --
     semctl(semid, 0, SETALL, values);
     free(values);

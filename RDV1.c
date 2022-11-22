@@ -22,6 +22,9 @@ int P(int semid, int noSem)
     // Ops[0].sem_op = ...; ...
     // Ops[0].sem_flg = ...; ...
     // --
+    Ops[0].sem_num = noSem;
+    Ops[0].sem_op = -1;
+    Ops[0].sem_flg = 0;
 
     ok = semop(semid, Ops, 1);
     if (ok == -1)
@@ -31,9 +34,11 @@ int P(int semid, int noSem)
     }
 
     // Q- faire appel a la fonction semop pour realiser l'operation P, la variable OK recupere la valeur de retour
+    // --
+    return ok;
 }
 
-/* retourne -1 en cas d'erreur           */
+/* retourne -1 en cas d'erreur */
 int V(int semid, int noSem)
 {
     struct sembuf Ops[1];
@@ -41,21 +46,50 @@ int V(int semid, int noSem)
 
     // Q- donner les 3 elements de la structure Ops pour realiser l'operation (voir le cours)
     // Ops[0].sem_num = ...; ...
+    // Ops[0].sem_op = ...; ...
+    // Ops[0].sem_flg = ...; ...
+    // --
+    Ops[0].sem_num = noSem;
+    Ops[0].sem_op = 1;
+    Ops[0].sem_flg = 0;
 
     // Q- faire appel a la fonction semop pour realiser l'operation V, la variable OK recupere la valeur de retour
+    // --
+    ok = semop(semid, Ops, 1);
+    if (ok == -1)
+    {
+        perror("V");
+        return ok;
+    }
+
+    return ok;
 }
 
 int main(void)
 { // A completer sans oublier de supprimer l'ensemble des semaphores
 
     // Q- Il faut d'abord recreer la cle (voir sema.c)
+    // --
+    key_t cle;
+    cle = ftok("RDV1.c", 'a');
 
     // Q- il faut ensuite ouvrir le semaphore avec semget, a part la cle, les autres argument doivent etre a zero
     // car il ne s'agit pas d'une creation mais d'une ouverture
+    // --
+    int semid;
+    semid = semget(cle, 2, 0);
 
     // Q- faire l'appel a sleep() afin d'avoir des attentes de differentes durees pour les 2 processus
+    // --
+    sleep(1);
 
     // Q- faire appel a P et a V (voir le TD)
+    // --
+    V(semid, 1);
+    P(semid, 2);
+    printf("RDV 1\n");
 
     // appeler la fonction de RDV, un printf est suffisant.
+    // --
+    return 0;
 }
