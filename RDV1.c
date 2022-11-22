@@ -91,5 +91,10 @@ int main(void)
 
     // appeler la fonction de RDV, un printf est suffisant.
     // --
+
+    // Suppression du semaphore
+    // Q- faire l'appel a semctl pour supprimer le semaphore
+    // --
+    semctl(semid, 0, IPC_RMID);
     return 0;
 }
