@@ -71,13 +71,13 @@ int main(void)
     // Q- Il faut d'abord recreer la cle (voir sema.c)
     // --
     key_t cle;
-    cle = ftok("RDV1.c", 'a');
+    cle = ftok("RDV1.c", 1);
 
     // Q- il faut ensuite ouvrir le semaphore avec semget, a part la cle, les autres argument doivent etre a zero
     // car il ne s'agit pas d'une creation mais d'une ouverture
     // --
     int semid;
-    semid = semget(cle, 2, 0);
+    semid = semget(cle, 2, 0666);
 
     // Q- faire l'appel a sleep() afin d'avoir des attentes de differentes durees pour les 2 processus
     // --
@@ -86,7 +86,7 @@ int main(void)
     // Q- faire appel a P et a V (voir le TD)
     // --
     V(semid, 1);
-    P(semid, 2);
+    P(semid, 0);
     printf("RDV 1\n");
 
     // appeler la fonction de RDV, un printf est suffisant.
