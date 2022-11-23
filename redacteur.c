@@ -76,9 +76,10 @@ int main(int argc, char *argv[])
     // Le Rédacteur écrit dans le fichier.
     P(semid, donnee);
     ecrire(fichier);
+    sleep(3);
     V(semid, donnee);
 
     // On supprime le sémaphore.
-    semctl(semid, 0, IPC_RMID);
+    // semctl(semid, 0, IPC_RMID);
     return 0;
 }
