@@ -69,6 +69,7 @@ int main(void)
 { // A completer sans oublier de supprimer l'ensemble des semaphores
 
     // Q- Il faut d'abord recreer la cle (voir sema.c)
+    // PRJVAL = 1.
     // --
     key_t cle;
     cle = ftok("RDV1.c", 1);
