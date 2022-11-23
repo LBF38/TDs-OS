@@ -63,14 +63,23 @@ void lire(char *nomFichier)
     fclose(f);
 }
 
-void nbLecture(char *nomFichier)
+int lireNbLecteurs(char *nomFichier)
 {
     FILE *f;
     int nb;
     f = fopen(nomFichier, "r");
     fscanf(f, "%d", &nb);
     fclose(f);
-    printf("nbLecteur = %d", nb);
+    printf("nbLecteur = %d\n", nb);
+    return nb;
+}
+
+void ecrireNbLecteurs(char *nomFichier, int nb)
+{
+    FILE *f;
+    f = fopen(nomFichier, "w");
+    fprintf(f, "%d", nb);
+    fclose(f);
 }
 
 int main(int argc, char *argv[])
@@ -88,20 +97,29 @@ int main(int argc, char *argv[])
     int mutex_l = 1;
     int donnee = 0;
     int NbLecteurs;
+    char *fichier_nombre = "nombre"; // Fichier contenant le nombre de lecteurs.
     char *fichier = "fichier.txt";
     // Lecture du fichier par les lecteurs.
     P(semid, mutex_l);
+    NbLecteurs = lireNbLecteurs("nombre");
     NbLecteurs++;
+    ecrireNbLecteurs(fichier_nombre, NbLecteurs);
     if (NbLecteurs == 1)
     {
         P(semid, donnee);
     }
     V(semid, mutex_l);
 
+    sleep(3);
+    
     lire(fichier);
 
+    sleep(3);
+    
     P(semid, mutex_l);
+    NbLecteurs = lireNbLecteurs("nombre");
     NbLecteurs--;
+    ecrireNbLecteurs(fichier_nombre, NbLecteurs);
     if (NbLecteurs == 0)
     {
         V(semid, donnee);
@@ -109,6 +127,6 @@ int main(int argc, char *argv[])
     V(semid, mutex_l);
 
     // On supprime le sémaphore.
-    semctl(semid, 0, IPC_RMID);
+    // semctl(semid, 0, IPC_RMID);
     return 0;
 }
