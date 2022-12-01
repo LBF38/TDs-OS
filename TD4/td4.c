@@ -1,15 +1,7 @@
-void *calculerFactorielle(void *ptrVoidVal)
-{
-
-    *res = 1;
-    while (val > 0)
-        ;
-    {
-        *res = *res * val;
-        val--;
-    }
-    pthread_exit((void *)res);
-}
+// inclut les librairies pour ce programme
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
 
 void *thread_function(void *arg)
 {
