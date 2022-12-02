@@ -146,7 +146,7 @@ int main(int argc, char **argv)
   pause();
 
   /* Recuperer le resultat dans la memoire partagee */
-  printf("Nombre d'octets : %d", *ptDeb);
+  printf("Nombre d'octets : %d\n", *ptDeb);
 
   /* Attendre le 1er enfant  */
   waitpid(pidWC, &status, 0);
