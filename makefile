@@ -21,3 +21,5 @@ TP1: TP1/makefile
 	cd TP1; make
 TP2: TP2/makefile
 	cd TP2; make
+TP3: TP3/makefile
+	cd TP3; make
