@@ -50,6 +50,14 @@ int nbPendingMult(Product *prod)
     return (nb);
 }
 
+/**
+ * @brief Function to waste time
+ * 
+ * This function is used to waste time in order to simulate a long
+ * computation.
+ * 
+ * @param ms 
+ */
 void wasteTime(unsigned long ms)
 {
     unsigned long t, t0;
@@ -70,9 +78,9 @@ void *mult(void *data)
     size_t iter;
 
     /*=>Recuperation de l'index, c'est a dire index = ... */
-    index = (size_t)data;
+    index = *((size_t *)data);
 
-    fprintf(stderr, "Begin mult(%d)\n", index);
+    fprintf(stderr, "Begin mult(%ld)\n", index);
     /* Tant que toutes les iterations */
     for (iter = 0; iter < prod.nbIterations; iter++) /* n'ont pas eu lieu              */
     {
@@ -85,31 +93,38 @@ void *mult(void *data)
         }
         pthread_mutex_unlock(&prod.mutex);
 
-        fprintf(stderr, "--> mult(%d)\n", index); /* La multiplication peut commencer */
+        fprintf(stderr, "--> mult(%ld)\n", index); /* La multiplication peut commencer */
 
         /*=>Effectuer la multiplication a l'index du thread courant... */
+        pthread_mutex_lock(&prod.mutex);
         prod.v3[index] = prod.v1[index] * prod.v2[index];
+        pthread_mutex_unlock(&prod.mutex);
 
         wasteTime(200 + (rand() % 200)); /* Perte du temps avec wasteTime() */
 
         /* Affichage du calcul sur l'index */
-        fprintf(stderr, "<-- mult(%d) : %.3g*%.3g=%.3g\n", index, prod.v1[index], prod.v2[index], prod.v3[index]);
+        fprintf(stderr, "<-- mult(%ld) : %.3g*%.3g=%.3g\n", index, prod.v1[index], prod.v2[index], prod.v3[index]);
         /*=>Marquer la fin de la multiplication en cours... */
+        pthread_mutex_lock(&prod.mutex);
         prod.pendingMult[index] = 0;
+        pthread_cond_signal(&prod.cond);
+        pthread_mutex_unlock(&prod.mutex);
 
         /*=>Si c'est la derniere... */
         if (index == prod.nbIterations - 1)
         {
             /*=>Autoriser le demarrage de l'addition... */
+            pthread_mutex_lock(&prod.mutex);
             if (nbPendingMult(&prod) == 0)
             {
                 pthread_mutex_lock(&prod.mutex);
                 prod.state = STATE_ADD;
                 pthread_mutex_unlock(&prod.mutex);
             }
+            pthread_mutex_unlock(&prod.mutex);
         }
     }
-    fprintf(stderr, "Quit mult(%d)\n", index);
+    fprintf(stderr, "Quit mult(%ld)\n", index);
     return (data);
 }
 
@@ -149,6 +164,7 @@ void *add(void *data)
         /*=>Autoriser le demarrage de l'affichage... */
         pthread_mutex_lock(&prod.mutex);
         prod.state = STATE_PRINT;
+        pthread_cond_signal(&prod.cond);
         pthread_mutex_unlock(&prod.mutex);
     }
     fprintf(stderr, "Quit add()\n");
@@ -170,8 +186,8 @@ int main(int argc, char **argv)
 
     /* Lire le nombre d'iterations et la taille des vecteurs */
     if ((argc <= 2) ||
-        (sscanf(argv[1], "%u", &prod.nbIterations) != 1) ||
-        (sscanf(argv[2], "%u", &prod.size) != 1) ||
+        (sscanf(argv[1], "%lu", &prod.nbIterations) != 1) ||
+        (sscanf(argv[2], "%lu", &prod.size) != 1) ||
         ((int)prod.nbIterations <= 0) || ((int)prod.size <= 0))
     {
         fprintf(stderr, "usage: %s nbIterations vectorSize\n", argv[0]);
