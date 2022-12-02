@@ -4,7 +4,6 @@
 #include <stdlib.h>
 
 /*********** Data Type ***********/
-
 typedef enum
 {
     STATE_WAIT,
@@ -28,11 +27,9 @@ typedef struct
 } Product;
 
 /*********** Data structure ***********/
-
 Product prod;
 
 /*********** Function ***********/
-
 void initPendingMult(Product *prod)
 {
     size_t i;
@@ -73,27 +70,43 @@ void *mult(void *data)
     size_t iter;
 
     /*=>Recuperation de l'index, c'est a dire index = ... */
+    index = (size_t)data;
 
     fprintf(stderr, "Begin mult(%d)\n", index);
     /* Tant que toutes les iterations */
     for (iter = 0; iter < prod.nbIterations; iter++) /* n'ont pas eu lieu              */
     {
         /*=>Attendre l'autorisation de multiplication POUR UNE NOUVELLE ITERATION...*/
+        /* On vient tester la variable de condition entre mutex et on attend tant que cela n'est pas bon. */
+        pthread_mutex_lock(&prod.mutex);
+        while (prod.state != STATE_MULT)
+        {
+            pthread_cond_wait(&prod.cond, &prod.mutex);
+        }
+        pthread_mutex_unlock(&prod.mutex);
 
         fprintf(stderr, "--> mult(%d)\n", index); /* La multiplication peut commencer */
 
         /*=>Effectuer la multiplication a l'index du thread courant... */
+        prod.v3[index] = prod.v1[index] * prod.v2[index];
 
         wasteTime(200 + (rand() % 200)); /* Perte du temps avec wasteTime() */
 
-        fprintf(stderr, "<-- mult(%d) : %.3g*%.3g=%.3g\n",              /* Affichage du */
-                index, prod.v1[index], prod.v2[index], prod.v3[index]); /* calcul sur   */
-                                                                        /* l'index      */
-                                                                        /*=>Marquer la fin de la multiplication en cours... */
+        /* Affichage du calcul sur l'index */
+        fprintf(stderr, "<-- mult(%d) : %.3g*%.3g=%.3g\n", index, prod.v1[index], prod.v2[index], prod.v3[index]);
+        /*=>Marquer la fin de la multiplication en cours... */
+        prod.pendingMult[index] = 0;
 
         /*=>Si c'est la derniere... */
+        if (index == prod.nbIterations - 1)
         {
             /*=>Autoriser le demarrage de l'addition... */
+            if (nbPendingMult(&prod) == 0)
+            {
+                pthread_mutex_lock(&prod.mutex);
+                prod.state = STATE_ADD;
+                pthread_mutex_unlock(&prod.mutex);
+            }
         }
     }
     fprintf(stderr, "Quit mult(%d)\n", index);
@@ -111,14 +124,22 @@ void *add(void *data)
         size_t index;
 
         /*=>Attendre l'autorisation d'addition... */
+        pthread_mutex_lock(&prod.mutex);
+        while (prod.state != STATE_ADD)
+        {
+            pthread_cond_wait(&prod.cond, &prod.mutex);
+        }
+        pthread_mutex_unlock(&prod.mutex);
 
-        fprintf(stderr, "--> add\n"); /* L'addition peut commencer */
+        /* L'addition peut commencer */
+        fprintf(stderr, "--> add\n");
 
         /* Effectuer l'addition... */
         prod.result = 0.0;
         for (index = 0; index < prod.size; index++)
         {
             /*=>A faire... */
+            prod.result += prod.v3[index];
         }
 
         wasteTime(100 + (rand() % 100)); /* Perdre du temps avec wasteTime() */
@@ -126,6 +147,9 @@ void *add(void *data)
         fprintf(stderr, "<-- add\n");
 
         /*=>Autoriser le demarrage de l'affichage... */
+        pthread_mutex_lock(&prod.mutex);
+        prod.state = STATE_PRINT;
+        pthread_mutex_unlock(&prod.mutex);
     }
     fprintf(stderr, "Quit add()\n");
     return (data);
@@ -145,7 +169,6 @@ int main(int argc, char **argv)
     (void)threadReturnValue;
 
     /* Lire le nombre d'iterations et la taille des vecteurs */
-
     if ((argc <= 2) ||
         (sscanf(argv[1], "%u", &prod.nbIterations) != 1) ||
         (sscanf(argv[2], "%u", &prod.size) != 1) ||
@@ -156,39 +179,44 @@ int main(int argc, char **argv)
     }
 
     /* Initialisations (Product, tableaux, generateur aleatoire,etc) */
-
     prod.state = STATE_WAIT;
 
     prod.pendingMult = (int *)malloc(prod.size * sizeof(int));
+    initPendingMult(&prod);
 
     /*=>initialiser prod.mutex ... */
+    pthread_mutex_init(&prod.mutex, NULL);
 
     /*=>initialiser prod.cond ...  */
+    pthread_mutex_lock(&prod.mutex);
+    pthread_cond_init(&prod.cond, NULL);
+    pthread_mutex_unlock(&prod.mutex);
 
     /* Allocation dynamique des 3 vecteurs v1, v2, v3 */
-
     prod.v1 = (double *)malloc(prod.size * sizeof(double));
     prod.v2 = (double *)malloc(prod.size * sizeof(double));
     prod.v3 = (double *)malloc(prod.size * sizeof(double));
 
     /* Allocation dynamique du tableau pour les threads multiplieurs */
-
     multTh = (pthread_t *)malloc(prod.size * sizeof(pthread_t));
 
     /* Allocation dynamique du tableau des MulData */
-
     multData = (size_t *)malloc(prod.size * sizeof(size_t));
 
     /* Initialisation du tableau des MulData */
-
     for (i = 0; i < prod.size; i++)
     {
         multData[i] = i;
     }
 
     /*=>Creer les threads de multiplication... */
+    for (i = 0; i < prod.size; i++)
+    {
+        pthread_create(&multTh[i], NULL, mult, &multData[i]);
+    }
 
     /*=>Creer le thread d'addition...          */
+    pthread_create(&addTh, NULL, add, NULL);
 
     srand(time((time_t *)0)); /* Init du generateur de nombres aleatoires */
 
@@ -198,7 +226,6 @@ int main(int argc, char **argv)
         size_t j;
 
         /* Initialiser aleatoirement les deux vecteurs */
-
         for (j = 0; j < prod.size; j++)
         {
             prod.v1[j] = 10.0 * (0.5 - ((double)rand()) / ((double)RAND_MAX));
@@ -206,22 +233,40 @@ int main(int argc, char **argv)
         }
 
         /*=>Autoriser le demarrage des multiplications pour une nouvelle iteration..*/
+        pthread_mutex_lock(&prod.mutex);
+        prod.state = STATE_MULT;
+        pthread_mutex_unlock(&prod.mutex);
 
         /*=>Attendre l'autorisation d'affichage...*/
+        pthread_mutex_lock(&prod.mutex);
+        while (prod.state != STATE_PRINT)
+        {
+            pthread_cond_wait(&prod.cond, &prod.mutex);
+        }
+        pthread_mutex_unlock(&prod.mutex);
 
         /*=>Afficher le resultat de l'iteration courante...*/
+        fprintf(stderr, "Resultat de l'iteration %d : %f\n", (int)iter, prod.result);
     }
 
     /*=>Attendre la fin des threads de multiplication...*/
+    for (i = 0; i < prod.size; i++)
+    {
+        pthread_join(multTh[i], &threadReturnValue);
+    }
 
     /*=>Attendre la fin du thread d'addition...*/
+    pthread_join(addTh, &threadReturnValue);
 
     /*=> detruire prod.cond ... */
+    pthread_mutex_lock(&prod.mutex);
+    pthread_cond_destroy(&prod.cond);
+    pthread_mutex_unlock(&prod.mutex);
 
     /*=> detruire prod.mutex ... */
+    pthread_mutex_destroy(&prod.mutex);
 
     /* Detruire avec free ce qui a ete initialise avec malloc */
-
     free(prod.pendingMult);
     free(prod.v1);
     free(prod.v2);
