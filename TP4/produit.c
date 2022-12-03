@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define RED "\x1B[31m"
 #define GREEN "\x1B[32m"
@@ -11,6 +12,9 @@
 #define CYAN "\x1B[36m"
 #define WHITE "\x1B[37m"
 #define RESET "\x1B[0m"
+
+/* Debug Flag */
+int debug = 0;
 
 /*********** Data Type ***********/
 
@@ -189,14 +193,6 @@ void *mult(void *data)
         /* Le mutex est verrouillé une fois la condition remplie
         mais relaché sinon et le thread attend la vérification de la condition.  */
 
-        // if (prod.pendingMult[index] == 0)
-        // {
-        //     fprintf(stderr, RED "Thread %ld : multiplication already done for iteration %ld\n" RESET, index, iter);
-        //     pthread_cond_signal(&prod.cond);
-        //     pthread_mutex_unlock(&prod.mutex);
-        //     continue;
-        // }
-
         /* La multiplication peut commencer */
         fprintf(stderr, "--> mult(%ld)\n", index);
 
@@ -212,8 +208,12 @@ void *mult(void *data)
         /*=>Marquer la fin de la multiplication en cours... */
         pthread_mutex_lock(&prod.mutex);
         prod.pendingMult[index] = 0;
-        fprintf(stderr, BLUE "mult(%ld) : pendingMult[%ld] = %d\n" RESET, index, index, prod.pendingMult[index]);
-        debugPrintPendingMult(prod); // DEBUG
+
+        if (debug == 1)
+        {
+            fprintf(stderr, BLUE "mult(%ld) : pendingMult[%ld] = %d\n" RESET, index, index, prod.pendingMult[index]);
+            debugPrintPendingMult(prod);
+        }
 
         /*=>Si c'est la derniere... */
         /*=>Autoriser le demarrage de l'addition... */
@@ -222,7 +222,6 @@ void *mult(void *data)
         {
             prod.state = STATE_ADD;
         }
-        // fprintf(stderr, BLUE "mult(%ld) : state = %d\n" RESET, index, prod.state);
 
         pthread_cond_broadcast(&prod.cond);
         pthread_mutex_unlock(&prod.mutex);
@@ -309,8 +308,15 @@ int main(int argc, char **argv)
         (sscanf(argv[2], "%lu", &prod.size) != 1) ||
         ((int)prod.nbIterations <= 0) || ((int)prod.size <= 0))
     {
-        fprintf(stderr, "usage: %s nbIterations vectorSize\n", argv[0]);
+        fprintf(stderr, "Usage: %s nbIterations vectorSize [optional flag]\n", argv[0]);
+        fprintf(stderr, "\nOption flags:\n-d\tdebug mode\n");
         return (EXIT_FAILURE);
+    }
+
+    /* For debug flag */
+    if (argc > 3 && strcmp(argv[3], "-d") == 0)
+    {
+        debug = 1;
     }
 
     /* Initialisations (Product, tableaux, generateur aleatoire,etc) */
@@ -365,7 +371,9 @@ int main(int argc, char **argv)
             prod.v1[j] = 10.0 * (0.5 - ((double)rand()) / ((double)RAND_MAX));
             prod.v2[j] = 10.0 * (0.5 - ((double)rand()) / ((double)RAND_MAX));
         }
-        debugPrintVectors(prod); // DEBUG
+
+        if (debug == 1)
+            debugPrintVectors(prod);
 
         /*=>Autoriser le demarrage des multiplications pour une nouvelle iteration..*/
         pthread_mutex_lock(&prod.mutex);
@@ -382,7 +390,7 @@ int main(int argc, char **argv)
         }
 
         /*=>Afficher le resultat de l'iteration courante...*/
-        fprintf(stderr, "Resultat de l'iteration %d : %f\n", (int)iter, prod.result);
+        fprintf(stderr, GREEN "Resultat de l'iteration %d : %f\n" RESET, (int)iter, prod.result);
         pthread_cond_signal(&prod.cond);
         pthread_mutex_unlock(&prod.mutex);
     }
