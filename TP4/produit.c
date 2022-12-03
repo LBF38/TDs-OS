@@ -3,6 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define RED "\x1B[31m"
+#define GREEN "\x1B[32m"
+#define YELLOW "\x1B[33m"
+#define BLUE "\x1B[34m"
+#define MAGENTA "\x1B[35m"
+#define CYAN "\x1B[36m"
+#define WHITE "\x1B[37m"
+#define RESET "\x1B[0m"
+
 /*********** Data Type ***********/
 
 /**
@@ -115,6 +124,26 @@ void wasteTime(unsigned long ms)
     } while (t - t0 < ms);
 }
 
+void debugPrintPendingMult(Product prod)
+{
+    size_t i;
+    for (i = 0; i < prod.size; i++)
+    {
+        fprintf(stderr, YELLOW "pendingMult[%ld] = %d\n" RESET, i, prod.pendingMult[i]);
+    }
+}
+
+void debugPrintVectors(Product prod)
+{
+    size_t i;
+    for (i = 0; i < prod.size; i++)
+    {
+        fprintf(stderr, YELLOW "v1[%ld] = %f\n" RESET, i, prod.v1[i]);
+        fprintf(stderr, YELLOW "v2[%ld] = %f\n" RESET, i, prod.v2[i]);
+        fprintf(stderr, YELLOW "v3[%ld] = %f\n" RESET, i, prod.v3[i]);
+    }
+}
+
 /*****************************************************************************/
 void *mult(void *data)
 {
@@ -137,33 +166,44 @@ void *mult(void *data)
         }
         /* Le mutex est verrouillé une fois la condition remplie
         mais relaché sinon et le thread attend la vérification de la condition.  */
+        if (prod.pendingMult[index] == 0)
+        {
+            fprintf(stderr, RED "Thread %ld : multiplication already done for iteration %ld\n" RESET, index, iter);
+            pthread_cond_signal(&prod.cond);
+            pthread_mutex_unlock(&prod.mutex);
+            continue;
+        }
 
-        fprintf(stderr, "--> mult(%ld)\n", index); /* La multiplication peut commencer */
+        /* La multiplication peut commencer */
+        fprintf(stderr, "--> mult(%ld)\n", index);
 
         /*=>Effectuer la multiplication a l'index du thread courant... */
         prod.v3[index] = prod.v1[index] * prod.v2[index];
 
-        wasteTime(200 + (rand() % 200)); /* Perte du temps avec wasteTime() */
+        /* Perte du temps avec wasteTime() */
+        wasteTime(200 + (rand() % 200));
 
         /* Affichage du calcul sur l'index */
         fprintf(stderr, "<-- mult(%ld) : %.3g*%.3g=%.3g\n", index, prod.v1[index], prod.v2[index], prod.v3[index]);
 
         /*=>Marquer la fin de la multiplication en cours... */
         prod.pendingMult[index] = 0;
-        pthread_cond_signal(&prod.cond);
-        pthread_mutex_unlock(&prod.mutex);
+        fprintf(stderr, BLUE "mult(%ld) : pendingMult[%ld] = %d\n" RESET, index, index, prod.pendingMult[index]);
+        debugPrintPendingMult(prod); // DEBUG
 
         /*=>Si c'est la derniere... */
         if (index == prod.nbIterations - 1)
         {
             /*=>Autoriser le demarrage de l'addition... */
-            pthread_mutex_lock(&prod.mutex);
+            /* On vérifie que toutes les multiplications ont été effectuées */
             if (nbPendingMult(&prod) == 0)
             {
                 prod.state = STATE_ADD;
             }
-            pthread_mutex_unlock(&prod.mutex);
+            // fprintf(stderr, BLUE "mult(%ld) : state = %d\n" RESET, index, prod.state);
         }
+        pthread_cond_signal(&prod.cond);
+        pthread_mutex_unlock(&prod.mutex);
     }
     fprintf(stderr, "Quit mult(%ld)\n", index);
     return (data);
@@ -174,8 +214,8 @@ void *add(void *data)
 {
     size_t iter;
     fprintf(stderr, "Begin add()\n");
-    /* Tant que toutes les iterations */
-    for (iter = 0; iter < prod.nbIterations; iter++) /* n'ont pas eu lieu              */
+    /* Tant que toutes les iterations n'ont pas eu lieu */
+    for (iter = 0; iter < prod.nbIterations; iter++)
     {
         size_t index;
 
@@ -197,7 +237,8 @@ void *add(void *data)
             prod.result += prod.v3[index];
         }
 
-        wasteTime(100 + (rand() % 100)); /* Perdre du temps avec wasteTime() */
+        /* Perdre du temps avec wasteTime() */
+        wasteTime(100 + (rand() % 100));
 
         fprintf(stderr, "<-- add\n");
 
@@ -236,7 +277,7 @@ int main(int argc, char **argv)
     /* Initialisations (Product, tableaux, generateur aleatoire,etc) */
     prod.state = STATE_WAIT;
     prod.pendingMult = (int *)malloc(prod.size * sizeof(int));
-    initPendingMult(&prod);
+    // initPendingMult(&prod); // Initialiser le tableau des multiplicateurs en attente
 
     /*=>initialiser prod.mutex ... */
     pthread_mutex_init(&prod.mutex, NULL);
@@ -284,10 +325,13 @@ int main(int argc, char **argv)
             prod.v1[j] = 10.0 * (0.5 - ((double)rand()) / ((double)RAND_MAX));
             prod.v2[j] = 10.0 * (0.5 - ((double)rand()) / ((double)RAND_MAX));
         }
+        debugPrintVectors(prod); // DEBUG
 
         /*=>Autoriser le demarrage des multiplications pour une nouvelle iteration..*/
+        initPendingMult(&prod); // Initialiser le tableau des multiplicateurs en attente pr l'itération en cours
         pthread_mutex_lock(&prod.mutex);
         prod.state = STATE_MULT;
+        pthread_cond_broadcast(&prod.cond);
         pthread_mutex_unlock(&prod.mutex);
 
         /*=>Attendre l'autorisation d'affichage...*/
