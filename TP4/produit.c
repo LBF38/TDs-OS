@@ -192,16 +192,14 @@ void *mult(void *data)
         debugPrintPendingMult(prod); // DEBUG
 
         /*=>Si c'est la derniere... */
-        if (index == prod.nbIterations - 1)
+        /*=>Autoriser le demarrage de l'addition... */
+        /* On vérifie que toutes les multiplications ont été effectuées */
+        if (nbPendingMult(&prod) == 0)
         {
-            /*=>Autoriser le demarrage de l'addition... */
-            /* On vérifie que toutes les multiplications ont été effectuées */
-            if (nbPendingMult(&prod) == 0)
-            {
-                prod.state = STATE_ADD;
-            }
-            // fprintf(stderr, BLUE "mult(%ld) : state = %d\n" RESET, index, prod.state);
+            prod.state = STATE_ADD;
         }
+        // fprintf(stderr, BLUE "mult(%ld) : state = %d\n" RESET, index, prod.state);
+
         pthread_cond_signal(&prod.cond);
         pthread_mutex_unlock(&prod.mutex);
     }
