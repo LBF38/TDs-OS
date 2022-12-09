@@ -91,17 +91,6 @@ void debugPrintVectors(Product prod)
     }
 }
 
-/**
- * @brief Print the available CPUs
- *
- *
- */
-void printAvailableCPUs()
-{
-    long nb_process = sysconf(_SC_NPROCESSORS_ONLN);
-    printf("Nombre de processeurs disponibles : %ld\n", nb_process);
-}
-
 /*****************************************************************************/
 
 /**
@@ -125,6 +114,7 @@ void *mult(void *data)
     /* Tant que toutes les iterations n'ont pas eu lieu */
     for (iter = 0; iter < prod.nbIterations; iter++)
     {
+
         /*=>Attendre l'autorisation de multiplication POUR UNE NOUVELLE ITERATION...*/
         /* On vient tester la variable de condition entre mutex et on attend tant que cela n'est pas bon. */
         pthread_mutex_lock(&prod.mutex);
@@ -135,6 +125,9 @@ void *mult(void *data)
         pthread_mutex_unlock(&prod.mutex);
         /* Le mutex est verrouillé une fois la condition remplie
         mais relaché sinon et le thread attend la vérification de la condition.  */
+
+        /* Pour montrer sur quel CPU tourne le thread */
+        fprintf(stderr, CYAN "mult(%ld) sur CPU %d à l'itération %ld\n" RESET, index, sched_getcpu(), iter);
 
         /* La multiplication peut commencer */
         fprintf(stderr, "--> mult(%ld)\n", index);
@@ -197,6 +190,9 @@ void *add(void *data)
             pthread_cond_wait(&prod.cond, &prod.mutex);
         }
         pthread_mutex_unlock(&prod.mutex);
+
+        /* Pour montrer sur quel CPU tourne le thread */
+        fprintf(stderr, CYAN "add() running on CPU %d à l'itération %ld\n" RESET, sched_getcpu(), iter);
 
         /* L'addition peut commencer */
         fprintf(stderr, "--> add\n");
@@ -261,12 +257,26 @@ int main(int argc, char **argv)
     {
         debug = 1;
     }
-    printAvailableCPUs();
+
+    /* Récupération du nombre de coeurs/processeurs disponibles */
+    long nb_process = sysconf(_SC_NPROCESSORS_ONLN);
+    printf("Nombre de processeurs disponibles : %ld\n", nb_process);
+
+    /* Définition du core pour la fonction main */
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(0, &cpuset);
+    if (sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) == -1)
+    {
+        perror("sched_setaffinity");
+        exit(EXIT_FAILURE);
+    }
+    /* Affichage du numéro du core CPU pour l'exécution du main */
+    fprintf(stderr, CYAN "main() running on CPU %d\n" RESET, sched_getcpu());
 
     /* Initialisations (Product, tableaux, generateur aleatoire,etc) */
     prod.state = STATE_WAIT;
     prod.pendingMult = (int *)malloc(prod.size * sizeof(int));
-    // initPendingMult(&prod); // Initialiser le tableau des multiplicateurs en attente
 
     /*=>initialiser prod.mutex ... */
     pthread_mutex_init(&prod.mutex, NULL);
@@ -294,11 +304,21 @@ int main(int argc, char **argv)
     /*=>Creer les threads de multiplication... */
     for (i = 0; i < prod.size; i++)
     {
+        /* On répartit les threads sur plusieurs cores en fonction du nb de process accessibles */
+        int cpu = i % nb_process;
+        cpu_set_t multSet;
+        CPU_ZERO(&multSet);
+        CPU_SET(cpu, &multSet);
         pthread_create(&multTh[i], NULL, mult, &multData[i]);
+        pthread_setaffinity_np(multTh[i], sizeof(cpu_set_t), &multSet);
     }
 
     /*=>Creer le thread d'addition...          */
+    cpu_set_t addSet;
+    CPU_ZERO(&addSet);
+    CPU_SET(2, &addSet);
     pthread_create(&addTh, NULL, add, NULL);
+    pthread_setaffinity_np(addTh, sizeof(cpu_set_t), &addSet);
 
     srand(time((time_t *)0)); /* Init du generateur de nombres aleatoires */
 
