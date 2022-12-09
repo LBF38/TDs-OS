@@ -1,3 +1,8 @@
+/* Pour la gestion des CPUs */
+#define _GNU_SOURCE
+#include <sched.h>
+#include <unistd.h>
+
 #include <pthread.h> /* produit.c */
 #include <sys/time.h>
 #include <stdio.h>

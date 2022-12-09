@@ -91,6 +91,17 @@ void debugPrintVectors(Product prod)
     }
 }
 
+/**
+ * @brief Print the available CPUs
+ *
+ *
+ */
+void printAvailableCPUs()
+{
+    long nb_process = sysconf(_SC_NPROCESSORS_ONLN);
+    printf("Nombre de processeurs disponibles : %ld\n", nb_process);
+}
+
 /*****************************************************************************/
 
 /**
@@ -250,6 +261,7 @@ int main(int argc, char **argv)
     {
         debug = 1;
     }
+    printAvailableCPUs();
 
     /* Initialisations (Product, tableaux, generateur aleatoire,etc) */
     prod.state = STATE_WAIT;
