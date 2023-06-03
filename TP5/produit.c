@@ -127,7 +127,7 @@ void *mult(void *data)
         mais relaché sinon et le thread attend la vérification de la condition.  */
 
         /* Pour montrer sur quel CPU tourne le thread */
-        fprintf(stderr, CYAN "mult(%ld) sur CPU %d à l'itération %ld\n" RESET, index, sched_getcpu(), iter);
+        fprintf(stderr, CYAN "Itération %ld: mult(%ld) sur CPU %d\n" RESET, iter, index, sched_getcpu());
 
         /* La multiplication peut commencer */
         fprintf(stderr, "--> mult(%ld)\n", index);
@@ -192,7 +192,7 @@ void *add(void *data)
         pthread_mutex_unlock(&prod.mutex);
 
         /* Pour montrer sur quel CPU tourne le thread */
-        fprintf(stderr, CYAN "add() running on CPU %d à l'itération %ld\n" RESET, sched_getcpu(), iter);
+        fprintf(stderr, CYAN "Itération %ld: add() running on CPU %d\n" RESET, iter, sched_getcpu());
 
         /* L'addition peut commencer */
         fprintf(stderr, "--> add\n");
